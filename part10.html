@@ -1,0 +1,377 @@
+<!doctype html> 
+<html lang="en"> 
+<head> 
+    <meta charset="UTF-8" />
+    <title>Making your first Phaser 3 Game - Part 10</title>
+    <script src="//cdn.jsdelivr.net/npm/phaser@3.53.1/dist/phaser.js"></script>
+    <style type="text/css">
+        body {
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+
+<script type="text/javascript">
+
+var config = {
+    type: Phaser.AUTO,
+    width: 1920,
+    height: 1080,
+    physics: {
+        default: 'arcade',
+        arcade: {
+            gravity: { y: 500 },
+            debug: false
+        }
+    },
+    scene: {
+        preload: preload,
+        create: create,
+        update: update
+    }
+};
+
+var player;
+var stars;
+var bombs;
+var platforms;
+var cursors;
+var score = 0;
+var gameOver = false;
+var scoreText;
+var lasers;
+var mouseTouchDown = false;
+
+var game = new Phaser.Game(config);
+
+function preload ()
+{
+    this.load.image('sky', 'assets/sky2.png');
+    this.load.image('ground', 'assets/platform.png');
+    this.load.image('cheminee', 'assets/ObstacleC.png');
+    this.load.image('rocher', 'assets/ObstacleA.png');
+    this.load.image('grosRocher', 'assets/ObstacleB.png');
+    this.load.image('chemineeRenversee', 'assets/ObstacleD2.png');
+    this.load.image('star', 'assets/star.png');
+    this.load.image('bomb', 'assets/bomb.png');
+    this.load.spritesheet('dude', 'assets/dude.png', { frameWidth: 64, frameHeight: 32 });
+    this.load.spritesheet('ennemis', 'assets/baudroie.png', { frameWidth: 77, frameHeight: 45 });
+    this.load.image('laser','assets/Tir.png');
+    this.load.image('vie1','assets/Vie1.png');
+    this.load.image('vie2','assets/Vie2.png');
+    this.load.image('vie3','assets/Vie3.png');
+}
+
+function create ()
+{
+    
+    //  Set the camera and physics bounds to be the size of 4x4 bg images
+    this.cameras.main.setBounds(0, 0, 1920 * 2.9, 350 * 4 );
+    this.physics.world.setBounds(0, 0, 1920 * 2.9, 270 * 4 );
+
+    this.add.image(0, 0, 'sky').setOrigin(0,0);
+    this.vie1 = this.add.image(50,50,'vie1').setScrollFactor(0)
+
+    //  The platforms group contains the ground and the 2 ledges we can jump on
+    platforms = this.physics.add.staticGroup();
+    this.ennemis = this.physics.add.group();
+    //  Here we create the ground.
+    //  Scale it to fit the width of the game (the original sprite is 400x32 in size)
+
+    //  Now let's create some ledges
+    platforms.create(1410, 764, 'cheminee');
+    platforms.create(2060, 764, 'cheminee');
+    platforms.create(4481, 764, 'cheminee');
+    platforms.create(5095, 385, 'chemineeRenversee');
+    platforms.create(178, 849, 'rocher');
+    platforms.create(3466, 842, 'grosRocher');
+    // The player and its settings
+    player = this.physics.add.sprite(45, 44, 'dude');
+    
+    //  Player physics properties. Give the little guy a slight bounce.
+    player.setBounce(0.2);
+    player.setCollideWorldBounds(true);
+    //  Our player animations, turning, walking left and walking right.
+    this.anims.create({
+        key: 'left',
+        frames: this.anims.generateFrameNumbers('dude', { start: 0, end: 2 }),
+        frameRate: 10,
+        repeat: -1
+    });
+
+    this.anims.create({
+        key: 'turn',
+        frames: [ { key: 'dude', frame: 3 } ],
+        frameRate: 20
+    });
+
+    this.anims.create({
+        key: 'right',
+        frames: this.anims.generateFrameNumbers('dude', { start: 4, end: 5 }),
+        frameRate: 10,
+        repeat: -1
+    });
+
+    // ennemis animation, gauche droite.
+    this.anims.create({
+        key: 'ennemisD',
+        frames : this.anims.generateFrameNumbers('ennemis', {start: 0, end: 1}),
+        frameRate: 2,
+        repeat :1
+    });
+
+
+    var curve = new Phaser.Curves.Line(new Phaser.Math.Vector2(100, 100), new Phaser.Math.Vector2(200, 100));
+
+
+    this.ennemis = this.add.follower(curve, 800, 800, 'ennemis');
+
+    
+
+    this.ennemis.startFollow({
+        duration: 3000,
+        yoyo: true,
+        repeat: 10,
+        rotateToPath: false,
+        rotationOffset: 180,
+        ease: 'Linear',
+
+        
+    });
+
+    var curve = new Phaser.Curves.Line(new Phaser.Math.Vector2(100, 100), new Phaser.Math.Vector2(200, 100));
+
+    this.ennemis = this.add.follower(curve, 1700, 400, 'ennemis');
+
+    
+
+    this.ennemis.startFollow({
+        duration: 3000,
+        yoyo: true,
+        repeat: 10,
+        rotateToPath: false,
+        rotationOffset: 180,
+        ease: 'Linear',
+
+        
+    });
+
+    this.anims.create({
+        key: 'ennemisD',
+        frames : this.anims.generateFrameNumbers('ennemis', {start: 0, end: 1}),
+        frameRate: 2,
+        repeat :1
+    });
+    
+    var curve = new Phaser.Curves.Line(new Phaser.Math.Vector2(100, 100), new Phaser.Math.Vector2(200, 100));
+
+    this.ennemis = this.add.follower(curve, 2600, 800, 'ennemis');
+
+    
+
+    this.ennemis.startFollow({
+        duration: 3000,
+        yoyo: true,
+        repeat: 10,
+        rotateToPath: false,
+        rotationOffset: 180,
+        ease: 'Linear',
+
+        
+    });
+
+    var curve = new Phaser.Curves.Line(new Phaser.Math.Vector2(100, 100), new Phaser.Math.Vector2(200, 100));
+
+    this.ennemis = this.add.follower(curve, 3400, 500, 'ennemis');
+
+    
+
+    this.ennemis.startFollow({
+        duration: 3000,
+        yoyo: true,
+        repeat: 10,
+        rotateToPath: false,
+        rotationOffset: 180,
+        ease: 'Linear',
+
+        
+    });
+
+    //  Input Events
+    cursors = this.input.keyboard.createCursorKeys();
+
+    //  Some stars to collect, 12 in total, evenly spaced 70 pixels apart along the x axis
+    stars = this.physics.add.group({
+        key: 'star',
+        repeat: 11,
+        setXY: { x: 12, y: 0, stepX: 70 }
+    });
+
+    stars.children.iterate(function (child) {
+
+        //  Give each star a slightly different bounce
+        child.setBounceY(Phaser.Math.FloatBetween(0.4, 0.8));
+
+    });
+
+    bombs = this.physics.add.group();
+
+    //  The score
+    scoreText = this.add.text(16, 16, 'score: 0', { fontSize: '32px', fill: '#000' });
+
+    //  Collide the player and the stars with the platforms
+    this.physics.add.collider(player, platforms);
+    this.physics.add.collider(stars, platforms);
+    this.physics.add.collider(bombs, platforms);
+
+    //  Checks to see if the player overlaps with any of the stars, if he does call the collectStar function
+    this.physics.add.overlap(player, stars, collectStar, null, this);
+
+    this.physics.add.collider(player, bombs, hitBomb, null, this);
+
+    this.cameras.main.startFollow(player, true, 0.05, 0.05);
+
+    // Create the group using the group factory
+	lasers = this.physics.add.group();
+
+	// To move the sprites later on, we have to enable the body
+	lasers.enableBody = true;
+	// We're going to set the body type to the ARCADE physics, since we don't need any advanced physics
+	lasers.physicsBodyType = Phaser.Physics.ARCADE;
+
+	lasers.createMultiple(20, 'laser');
+
+    this.life = 3
+    this.physics.add.collider(this.ennemis, player, hitEnnemy, undefined, this)
+}
+
+function update ()
+{
+
+    this.ennemis.anims.play('ennemisD', true);
+
+    if (gameOver)
+    {
+        return;
+    }
+
+    if (cursors.left.isDown)
+    {
+        player.setVelocityX(-360);
+
+        player.anims.play('left', true);
+    }
+    else if (cursors.right.isDown)
+    {
+        player.setVelocityX(360);
+
+        player.anims.play('right', true);
+    }
+    else
+    {
+        player.setVelocityX(0);
+
+        player.anims.play('turn');
+    }
+
+    if (cursors.up.isDown)
+    {
+        player.setVelocityY(-330);
+    }
+    // Game.input.activePointer is either the first finger touched, or the mouse
+	if (game.input.activePointer.isDown) {
+		// We'll manually keep track if the pointer wasn't already down
+		if (!mouseTouchDown) {
+			touchDown();
+		}
+	} else {
+		if (mouseTouchDown) {
+			touchUp();
+		}
+	}
+
+		if (cursors.down.isDown) {
+			fireLaser();
+		}
+	}
+
+function touchDown() {
+	// Set touchDown to true, so we only trigger this once
+	mouseTouchDown = true;
+	fireLaser();
+}
+
+function touchUp() {
+	// Set touchDown to false, so we can trigger touchDown on the next click
+	mouseTouchDown = false;
+}
+
+function fireLaser() {
+	// Get the first laser that's inactive, by passing 'false' as a parameter
+	if (this.laser) {
+		// If we have a laser, set it to the starting position
+		this.laser.reset(player.x, player.y - 20);
+		// Give it a velocity of -500 so it starts shooting
+		this.laser.body.velocity.y = -500;
+	}
+ 
+}
+
+function hitEnnemy(){
+            this.life -= 1
+        if (this.life == 2){
+            this.vie1.destroy()
+            this.vie2 = this.add.image(0,0,'vie2').setScrollFactor(0)
+        }
+        if (this.life == 1){
+            this.vie2.destroy()
+            this.vie3 = this.add.image(0,0,'vie3').setScrollFactor(0)
+        }
+        if (this.life == 0){
+            this.scene.start('game-over')
+        }  
+    }
+function collectStar (player, star)
+{
+    star.disableBody(true, true);
+
+    //  Add and update the score
+    score += 10;
+    scoreText.setText('Score: ' + score);
+
+    if (stars.countActive(true) === 0)
+    {
+        //  A new batch of stars to collect
+        stars.children.iterate(function (child) {
+
+            child.enableBody(true, child.x, 0, true, true);
+
+        });
+
+        var x = (player.x < 400) ? Phaser.Math.Between(400, 800) : Phaser.Math.Between(0, 400);
+
+        var bomb = bombs.create(x, 16, 'bomb');
+        bomb.setBounce(1);
+        bomb.setCollideWorldBounds(true);
+        bomb.setVelocity(Phaser.Math.Between(-200, 200), 20);
+        bomb.allowGravity = false;
+
+    }
+}
+
+function hitBomb (player, bomb)
+{
+    this.physics.pause();
+
+    player.setTint(0xff0000);
+
+    player.anims.play('turn');
+
+    gameOver = true;
+}
+
+</script>
+
+</body>
+</html>
